@@ -1,6 +1,7 @@
 export interface Dependency {
 	subs: (Subscriber | Dependency & Subscriber)[];
 	subSlots: number[];
+	subsLength: number;
 }
 
 export interface Subscriber {
@@ -86,7 +87,7 @@ export function createReactiveSystem({
 			return;
 		}
 		const subs = dep.subs;
-		const subsLength = subs.length;
+		const subsLength = dep.subsLength;
 		const lastSub = subs[subsLength - 1];
 		if (lastSub === sub /* && isValidLink(dep, sub) */) {
 			return;
@@ -96,6 +97,7 @@ export function createReactiveSystem({
 		dep.subSlots[subsLength] = subsLength;
 		sub.depSlots[depsLength] = depsLength;
 		sub.depsLength = depsLength + 1;
+		dep.subsLength = subsLength + 1;
 	}
 
 	/**
@@ -127,10 +129,9 @@ export function createReactiveSystem({
 
 			if (shouldNotify) {
 				if ('subs' in sub) {
-					const subs = sub.subs;
-					const subsLength = subs.length;
+					const subsLength = sub.subsLength;
 					if (subsLength) {
-						propagate(sub, subs, subsLength, subFlags & SubscriberFlags.Effect ? SubscriberFlags.PendingEffect : SubscriberFlags.PendingComputed);
+						propagate(sub, sub.subs, subsLength, subFlags & SubscriberFlags.Effect ? SubscriberFlags.PendingEffect : SubscriberFlags.PendingComputed);
 					} else if (subFlags & SubscriberFlags.Effect) {
 						notifyBuffer[notifyBufferLength++] = sub;
 					}
@@ -232,10 +233,9 @@ export function createReactiveSystem({
 	function processComputedUpdate(computed: Dependency & Subscriber, flags: SubscriberFlags): void {
 		if (flags & SubscriberFlags.Dirty || checkDirty(computed.deps!, computed.depsLength)) {
 			if (updateComputed(computed)) {
-				const subs = computed.subs!;
-				const subsLength = subs.length;
+				const subsLength = computed.subsLength;
 				if (subsLength) {
-					shallowPropagate(subs, subsLength);
+					shallowPropagate(computed.subs, subsLength);
 				}
 			}
 		} else {

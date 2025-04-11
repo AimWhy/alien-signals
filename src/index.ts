@@ -93,18 +93,20 @@ export function signal<T>(initialValue?: T): {
 } {
 	return signalGetterSetter.bind({
 		currentValue: initialValue,
-		subs: [],
-		subSlots: [],
+		subs: [undefined as any],
+		subSlots: [0],
+		subsLength: 0,
 	}) as () => T | undefined;
 }
 
 export function computed<T>(getter: (previousValue?: T) => T): () => T {
 	return computedGetter.bind({
 		currentValue: undefined,
-		subs: [],
-		subSlots: [],
-		deps: [],
-		depSlots: [],
+		subs: [undefined as any],
+		subSlots: [0],
+		subsLength: 0,
+		deps: [undefined as any],
+		depSlots: [0],
 		depsLength: 0,
 		flags: SubscriberFlags.Computed | SubscriberFlags.Dirty,
 		getter: getter as (previousValue?: unknown) => unknown,
@@ -114,10 +116,11 @@ export function computed<T>(getter: (previousValue?: T) => T): () => T {
 export function effect<T>(fn: () => T): () => void {
 	const e: Effect = {
 		fn,
-		subs: [],
-		subSlots: [],
-		deps: [],
-		depSlots: [],
+		subs: [undefined as any],
+		subSlots: [0],
+		subsLength: 0,
+		deps: [undefined as any],
+		depSlots: [0],
 		depsLength: 0,
 		flags: SubscriberFlags.Effect,
 	};
@@ -204,10 +207,9 @@ function computedGetter<T>(this: Computed<T>): T {
 function signalGetterSetter<T>(this: Signal<T>, ...value: [T]): T | void {
 	if (value.length) {
 		if (this.currentValue !== (this.currentValue = value[0])) {
-			const subs = this.subs;
-			const subsLength = subs.length;
+			const subsLength = this.subsLength;
 			if (subsLength) {
-				propagate(this, subs, subsLength);
+				propagate(this, this.subs, subsLength);
 				if (!batchDepth) {
 					processEffectNotifications();
 				}
