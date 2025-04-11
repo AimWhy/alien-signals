@@ -93,18 +93,19 @@ export function signal<T>(initialValue?: T): {
 } {
 	return signalGetterSetter.bind({
 		currentValue: initialValue,
-		subs: undefined,
-		subsTail: undefined,
+		subs: [],
+		subSlots: [],
 	}) as () => T | undefined;
 }
 
 export function computed<T>(getter: (previousValue?: T) => T): () => T {
 	return computedGetter.bind({
 		currentValue: undefined,
-		subs: undefined,
-		subsTail: undefined,
-		deps: undefined,
-		depsTail: undefined,
+		subs: [],
+		subSlots: [],
+		deps: [],
+		depSlots: [],
+		depsLength: 0,
 		flags: SubscriberFlags.Computed | SubscriberFlags.Dirty,
 		getter: getter as (previousValue?: unknown) => unknown,
 	}) as () => T;
@@ -113,10 +114,11 @@ export function computed<T>(getter: (previousValue?: T) => T): () => T {
 export function effect<T>(fn: () => T): () => void {
 	const e: Effect = {
 		fn,
-		subs: undefined,
-		subsTail: undefined,
-		deps: undefined,
-		depsTail: undefined,
+		subs: [],
+		subSlots: [],
+		deps: [],
+		depSlots: [],
+		depsLength: 0,
 		flags: SubscriberFlags.Effect,
 	};
 	if (activeSub !== undefined) {
@@ -136,8 +138,9 @@ export function effect<T>(fn: () => T): () => void {
 
 export function effectScope<T>(fn: () => T): () => void {
 	const e: EffectScope = {
-		deps: undefined,
-		depsTail: undefined,
+		deps: [],
+		depSlots: [],
+		depsLength: 0,
 		flags: SubscriberFlags.Effect,
 		isScope: true,
 	};
@@ -202,8 +205,9 @@ function signalGetterSetter<T>(this: Signal<T>, ...value: [T]): T | void {
 	if (value.length) {
 		if (this.currentValue !== (this.currentValue = value[0])) {
 			const subs = this.subs;
-			if (subs !== undefined) {
-				propagate(subs);
+			const subsLength = subs.length;
+			if (subsLength) {
+				propagate(this, subs, subsLength);
 				if (!batchDepth) {
 					processEffectNotifications();
 				}
