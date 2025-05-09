@@ -1,10 +1,8 @@
 {
 	"name": "alien-signals",
-	"version": "2.0.1",
-	"sideEffects": false,
+	"version": "2.0.4",
 	"license": "MIT",
 	"description": "The lightest signal library.",
-	"packageManager": "pnpm@9.12.0",
 	"types": "./types/index.d.ts",
 	"exports": {
 		".": {
@@ -21,11 +19,26 @@
 			"types": "./types/index.d.ts",
 			"import": "./esm/index.mjs",
 			"require": "./esm/index.mjs"
+		},
+		"./system": {
+			"types": "./types/system.d.ts",
+			"import": "./esm/system.mjs",
+			"require": "./cjs/system.cjs"
+		},
+		"./cjs/system": {
+			"types": "./types/system.d.ts",
+			"import": "./cjs/system.cjs",
+			"require": "./cjs/system.cjs"
+		},
+		"./esm/system": {
+			"types": "./types/system.d.ts",
+			"import": "./esm/system.mjs",
+			"require": "./esm/system.mjs"
 		}
 	},
 	"files": [
-		"cjs/index.cjs",
-		"esm/index.mjs",
+		"cjs/*.cjs",
+		"esm/*.mjs",
 		"types/*.d.ts"
 	],
 	"repository": {
@@ -35,9 +48,9 @@
 	"scripts": {
 		"prepublishOnly": "npm run build",
 		"build": "tsc && npm run build:esm && npm run build:cjs",
-		"build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=esm/index.mjs",
-		"build:cjs": "esbuild src/index.ts --bundle --format=cjs --outfile=cjs/index.cjs",
-		"test": "vitest run",
+		"build:esm": "mkdir -p esm && cp src/index.ts esm/index.mts && cp src/system.ts esm/system.mts && sed -i '' \"s/'\\.\\/system.js'/'\\.\\/system.mjs'/g\" esm/index.mts && tsc esm/*.mts --removeComments --outDir esm --module esnext",
+		"build:cjs": "mkdir -p cjs && cp src/index.ts cjs/index.cts && cp src/system.ts cjs/system.cts && sed -i '' \"s/'\\.\\/system.js'/'\\.\\/system.cjs'/g\" cjs/index.cts && tsc cjs/*.cts --removeComments --outDir cjs --module commonjs",
+		"test": "npm run build && vitest run",
 		"lint": "tsslint --project tsconfig.json",
 		"bench": "npm run build:esm && node --jitless --expose-gc benchs/propagate.mjs",
 		"bench:memory": "npm run build:esm && node --expose-gc benchs/memoryUsage.mjs"
@@ -45,7 +58,6 @@
 	"devDependencies": {
 		"@tsslint/cli": "latest",
 		"@tsslint/config": "latest",
-		"esbuild": "latest",
 		"mitata": "latest",
 		"typescript": "latest",
 		"vitest": "latest",
